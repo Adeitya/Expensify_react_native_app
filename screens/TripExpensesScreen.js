@@ -9,39 +9,14 @@ import {
   FlatList,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
+import Snackbar from 'react-native-snackbar';
 import {useIsFocused, useNavigation, useRoute} from '@react-navigation/native';
 import randomImage from '../assets/images/randonImage';
 import ExpenseCardComponent from '../components/ExpenseCardComponent';
-import {getDocs, query, where} from 'firebase/firestore';
+import {deleteDoc, doc, getDocs, query, where} from 'firebase/firestore';
 import {expensesRef} from '../config/firebase';
 import EmptyListComponent from '../components/EmptyListComponent';
-
-const dummyData = [
-  {
-    id: 1,
-    reason: 'burger',
-    amount: '100',
-    category: 'Food',
-  },
-  {
-    id: 2,
-    reason: 'jeans',
-    amount: '1000',
-    category: 'Shopping',
-  },
-  {
-    id: 3,
-    reason: 'movie',
-    amount: '200',
-    category: 'Entertainment',
-  },
-  {
-    id: 4,
-    reason: 'pizza',
-    amount: '100',
-    category: 'Food',
-  },
-];
+import {SwipeListView} from 'react-native-swipe-list-view';
 
 export default function TripExpenseScreen() {
   const navigation = useNavigation();
@@ -59,6 +34,64 @@ export default function TripExpenseScreen() {
     });
     setExpenseDetailsData(data);
   };
+
+  const handleDelete = async expenseId => {
+    try {
+      const expenseDocRef = doc(expensesRef, expenseId);
+      await deleteDoc(expenseDocRef);
+      Snackbar.show({
+        text: 'Expense successfully deleted!',
+        backgroundColor: 'green',
+      });
+      fetchExpenseDetails();
+    } catch (error) {
+      Snackbar.show({
+        text: error.message || 'Failed to delete expense.',
+        backgroundColor: 'red',
+      });
+    }
+  };
+
+  const renderItem = item => (
+    <ExpenseCardComponent
+      reason={item.item.expenseReason}
+      amount={item.item.expenseAmount}
+      category={item.item.expenseCategory}
+    />
+  );
+
+  const renderHiddenItem = item => (
+    <View
+      style={{
+        alignItems: 'center',
+        backgroundColor: 'white',
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        padding: 15,
+        marginBottom: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'black',
+      }}>
+      <TouchableOpacity
+        style={{
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%',
+          //width: 75,
+          backgroundColor: 'white',
+          borderRadius: 10,
+          //borderWidth: 1,
+          padding: 5,
+        }}
+        onPress={() => {
+          handleDelete(item.item.id);
+        }}>
+        <Text style={{color: 'black', fontWeight: 'bold'}}>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   useEffect(() => {
     if (isFocused) {
@@ -96,17 +129,26 @@ export default function TripExpenseScreen() {
       </View>
       <View style={styles.flatListView}>
         {expenseDetailsData.length ? (
-          <FlatList
+          // <FlatList
+          //   data={expenseDetailsData}
+          //   showsVerticalScrollIndicator={false}
+          //   renderItem={item => (
+          //     <ExpenseCardComponent
+          //       reason={item.item.expenseReason}
+          //       amount={item.item.expenseAmount}
+          //       category={item.item.expenseCategory}
+          //     />
+          //   )}
+          //   keyExtractor={item => item.id}
+          // />
+          <SwipeListView
             data={expenseDetailsData}
-            showsVerticalScrollIndicator={false}
-            renderItem={item => (
-              <ExpenseCardComponent
-                reason={item.item.expenseReason}
-                amount={item.item.expenseAmount}
-                category={item.item.expenseCategory}
-              />
-            )}
             keyExtractor={item => item.id}
+            renderItem={item => renderItem(item)}
+            renderHiddenItem={item => renderHiddenItem(item)}
+            leftOpenValue={0}
+            rightOpenValue={-75}
+            disableRightSwipe
           />
         ) : (
           <EmptyListComponent msg={'No expenses added'} />
