@@ -17,6 +17,7 @@ import {deleteDoc, doc, getDocs, query, where} from 'firebase/firestore';
 import {expensesRef} from '../config/firebase';
 import EmptyListComponent from '../components/EmptyListComponent';
 import {SwipeListView} from 'react-native-swipe-list-view';
+import LoadingComponent from '../components/LoadingComponent';
 
 export default function TripExpenseScreen() {
   const navigation = useNavigation();
@@ -24,15 +25,21 @@ export default function TripExpenseScreen() {
   const isFocused = useIsFocused();
   const {place, country, id} = route.params;
   const [expenseDetailsData, setExpenseDetailsData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const fetchExpenseDetails = async () => {
-    const q = query(expensesRef, where('tripId', '==', id));
-    const querySnapshot = await getDocs(q);
-    let data = [];
-    querySnapshot.forEach(doc => {
-      data.push({...doc.data(), id: doc.id});
-    });
-    setExpenseDetailsData(data);
+    try {
+      setLoading(true);
+      const q = query(expensesRef, where('tripId', '==', id));
+      const querySnapshot = await getDocs(q);
+      let data = [];
+      querySnapshot.forEach(doc => {
+        data.push({...doc.data(), id: doc.id});
+      });
+      setExpenseDetailsData(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async expenseId => {
@@ -61,34 +68,13 @@ export default function TripExpenseScreen() {
   );
 
   const renderHiddenItem = item => (
-    <View
-      style={{
-        alignItems: 'center',
-        backgroundColor: 'white',
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        padding: 15,
-        marginBottom: 8,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: 'black',
-      }}>
+    <View style={styles.swipeBtnView}>
       <TouchableOpacity
-        style={{
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%',
-          //width: 75,
-          backgroundColor: 'white',
-          borderRadius: 10,
-          //borderWidth: 1,
-          padding: 5,
-        }}
+        style={styles.swipeBtnInnerView}
         onPress={() => {
           handleDelete(item.item.id);
         }}>
-        <Text style={{color: 'black', fontWeight: 'bold'}}>Delete</Text>
+        <Text style={styles.swipeBtnTxt}>Delete</Text>
       </TouchableOpacity>
     </View>
   );
@@ -128,19 +114,9 @@ export default function TripExpenseScreen() {
         </TouchableOpacity>
       </View>
       <View style={styles.flatListView}>
-        {expenseDetailsData.length ? (
-          // <FlatList
-          //   data={expenseDetailsData}
-          //   showsVerticalScrollIndicator={false}
-          //   renderItem={item => (
-          //     <ExpenseCardComponent
-          //       reason={item.item.expenseReason}
-          //       amount={item.item.expenseAmount}
-          //       category={item.item.expenseCategory}
-          //     />
-          //   )}
-          //   keyExtractor={item => item.id}
-          // />
+        {loading ? (
+          <LoadingComponent containerStyle={{flex: 1}} />
+        ) : expenseDetailsData.length ? (
           <SwipeListView
             data={expenseDetailsData}
             keyExtractor={item => item.id}
@@ -151,7 +127,7 @@ export default function TripExpenseScreen() {
             disableRightSwipe
           />
         ) : (
-          <EmptyListComponent msg={'No expenses added'} />
+          <EmptyListComponent msg="No expenses added" />
         )}
       </View>
     </SafeAreaView>
@@ -213,4 +189,27 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   flatListView: {flex: 1, marginHorizontal: 16},
+  swipeBtnView: {
+    alignItems: 'center',
+    backgroundColor: 'white',
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 15,
+    marginBottom: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'black',
+  },
+  swipeBtnInnerView: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+    //width: 75,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    //borderWidth: 1,
+    padding: 5,
+  },
+  swipeBtnTxt: {color: 'black', fontWeight: 'bold'},
 });
