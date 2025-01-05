@@ -16,5 +16,8 @@ The **Expensify App** is a React Native application designed to help users track
   - Real-time database to store and sync user data.
 
 ---
+## Demo
+
+https://github.com/user-attachments/assets/df112be1-4f97-4980-a450-55063b08f499
 
 
